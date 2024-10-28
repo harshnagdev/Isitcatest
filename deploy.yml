@@ -15,7 +15,35 @@ jobs:
 
     - name: Deploy to EC2
       env:
-        ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+        EC2_USER: "name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main  # Replace with your target branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Deploy to EC2
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+        EC2_USER: "ec2-user"  # Replace with your EC2 username (e.g., ubuntu, ec2-user)
+        EC2_HOST: "13.127.9.13"  # Replace with your EC2 instance public IP or domain name
       run: |
-        echo "Running deployment script"
-        # Add your deployment commands here, e.g., using SSH to run scripts on EC2
+        echo "$SSH_PRIVATE_KEY" > /tmp/ec2_key.pem
+        chmod 600 /tmp/ec2_key.pem
+        ssh -o StrictHostKeyChecking=no -i /tmp/ec2_key.pem $EC2_USER@$EC2_HOST << 'EOF'
+          # Navigate to your application directory
+          cd /var/www/html/
+          # Pull the latest code
+          git pull origin main
+          # Restart your services (e.g., using pm2, systemctl, or docker)
+          sudo systemctl restart your-service
+        EOF
