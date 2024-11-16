@@ -1,0 +1,32 @@
+name: Local Deploy Test
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Deploy to Local Machine
+      env:
+        DEPLOY_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        SERVER: "172.22.50.114" # Replace with your local machine's IP
+        USER: "root" # Replace with your Ubuntu username
+        DEPLOY_PATH: "/home/root/deploy_directory"
+      run: |
+        # Add the private key to SSH agent
+        mkdir -p ~/.ssh
+        echo "$DEPLOY_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+
+        # Add the server to known hosts
+        ssh-keyscan -H $SERVER >> ~/.ssh/known_hosts
+
+        # Deploy code to local machine
+        rsync -avz --delete ./ $USER@$SERVER:$DEPLOY_PATH
